@@ -1,0 +1,8 @@
+value = NUMBER | BOOL | STRING | enum | array | dictionary
+
+enum = IDENTIFIER (array | dictionary)
+
+array = '[' (value (',' value)* ','?)? ']'
+
+dictionary = '{' (key_value_pair (',' key_value_pair)* ','?)? '}'
+key_value_pair = IDENTIFIER '=' value

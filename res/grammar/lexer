@@ -1,0 +1,7 @@
+number = sign digit+ ('.' digit* | 'e' sign digit+)?
+sign = ('+' | '-')?
+digit = '0'..'9'
+
+bool = 'true' | 'false'
+
+string = '"' non_newline* '"'

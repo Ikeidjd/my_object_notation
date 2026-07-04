@@ -1,0 +1,11 @@
+# Okay
+"Freddy Fazbear"
+
+# Unclosed string literal
+"Freddy Fazbear
+
+# Unclosed string literal
+Freddy Fazbear"
+
+# Okay because no string
+Freddy Fazbear
