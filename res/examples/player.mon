@@ -16,14 +16,14 @@
         {
             level = 2,
             xp = 200,
-            ttype = Shadow[20],
+            ttype = Shadow [20],
         },
         {
             level = 3,
             xp = 300,
-            ttype = Water,
+            ttype = Water [],
         }
     ],
-    weapon = Some("CopperShortsword"),
-    alt_weapon = None,
+    weapon = Some["CopperShortsword"],
+    alt_weapon = None [],
 }

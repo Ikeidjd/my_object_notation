@@ -1,16 +1,14 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::{Deref, DerefMut}, rc::Rc};
 
-use crate::token::{Token, TokenType};
+use crate::{mon_error::MonError, text::Text, token::{Token, TokenType}};
 
-pub fn lex(source_code: &str) -> Result<Vec<Token>, Vec<LexerError>> {
+pub fn lex(source_code: Rc<[char]>) -> Result<Vec<Token>, Vec<LexerError>> {
     let mut lexer = Lexer::new(source_code);
 
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
 
-    let mut run = true;
-
-    while run {
+    loop {
         let token = match lexer.get_next_token() {
             Ok(token) => token,
             Err(error) => {
@@ -20,7 +18,7 @@ pub fn lex(source_code: &str) -> Result<Vec<Token>, Vec<LexerError>> {
         };
 
         if token.ttype == TokenType::End {
-            run = false;
+            break;
         }
 
         tokens.push(token);
@@ -32,7 +30,7 @@ pub fn lex(source_code: &str) -> Result<Vec<Token>, Vec<LexerError>> {
     }
 }
 
-enum LexerErrorType {
+pub enum LexerErrorType {
     InvalidCharacter,
     UnclosedStringLiteral,
 }
@@ -46,75 +44,22 @@ impl Display for LexerErrorType {
     }
 }
 
-pub struct LexerError {
-    ttype: LexerErrorType,
-    line_str: String,
-    line: usize,
-    start_pos: usize,
-    end_pos: usize,
-}
-
-impl LexerError {
-    fn new(ttype: LexerErrorType, lexer: &Lexer) -> Self {
-        let start_of_line = lexer.start_index - lexer.start_pos;
-
-        let mut end_of_line = lexer.index;
-
-        while end_of_line < lexer.chars.len() && lexer.chars[end_of_line] != '\n' {
-            end_of_line += 1;
-        }
-
-        Self {
-            ttype,
-            line_str: lexer.chars[start_of_line..end_of_line].iter().collect(),
-            line: lexer.start_line,
-            start_pos: lexer.start_pos,
-            end_pos: lexer.pos,
-        }
-    }
-}
-
-impl Display for LexerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Error at line {}, pos {}.\n{}", self.line, self.start_pos, self.line_str)?;
-
-        for _ in 0..self.start_pos {
-            write!(f, " ")?;
-        }
-
-        write!(f, "\x1b[1;31m")?;
-
-        for _ in self.start_pos..self.end_pos {
-            write!(f, "^")?;
-        }
-        
-        write!(f, " {}\x1b[0m", self.ttype)
-    }
-}
-
+type LexerError = MonError<LexerErrorType>;
 type LexerResult<T> = Result<T, LexerError>;
 
-struct Lexer {
-    chars: Vec<char>,
-    start_index: usize,
-    start_line: usize,
-    start_pos: usize,
-    index: usize,
-    line: usize,
-    pos: usize,
-}
+struct Lexer(Text);
 
 impl Lexer {
-    fn new(source_code: &str) -> Self {
-        Self {
-            chars: source_code.chars().collect(),
+    fn new(chars: Rc<[char]>) -> Self {
+        Self(Text {
+            chars,
             start_index: 0,
             start_line: 0,
             start_pos: 0,
             index: 0,
             line: 0,
             pos: 0,
-        }
+        })
     }
 
     fn get_next_token(&mut self) -> LexerResult<Token> {
@@ -165,8 +110,8 @@ impl Lexer {
             self.advance();
         }
 
-        match self.get_next_token_value() {
-            ['t', 'r', 'u', 'e'] | ['f', 'a', 'l', 's', 'e'] => self.get_token_of_type(TokenType::Bool),
+        match &self.0.to_string()[..] {
+            "true" | "false" => self.get_token_of_type(TokenType::Bool),
             _ => self.get_token_of_type(TokenType::Identifier),
         }
     }
@@ -188,14 +133,7 @@ impl Lexer {
     fn get_token_of_type(&mut self, ttype: TokenType) -> Token {
         Token {
             ttype,
-            value: self.get_next_token_value().iter().collect(),
-        }
-    }
-
-    fn get_next_token_value(&self) -> &[char] {
-        match self.start_index < self.chars.len() {
-            true => &self.chars[self.start_index..self.index],
-            false => &['\0'],
+            text: self.0.clone(),
         }
     }
 
@@ -239,5 +177,19 @@ impl Lexer {
 
     fn is_identifier_char(c: char) -> bool {
         c.is_alphabetic() || c == '_'
+    }
+}
+
+impl Deref for Lexer {
+    type Target = Text;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Lexer {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
