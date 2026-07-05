@@ -4,7 +4,7 @@
     max_health = 10,
     health = 3,
     can_double_jump = true,
-    godmode = false,
+    god_mode = false,
     power_ups = [
         {
             level = 1,

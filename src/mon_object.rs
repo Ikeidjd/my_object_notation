@@ -1,12 +1,33 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, error::Error, fmt::{Debug, Display}, rc::Rc};
 
+use crate::{lexer, parser};
+
+#[derive(PartialEq, Eq)]
 pub enum MonObject {
-    Number(String),
-    Bool(String),
+    PrimitiveType(String),
     String(String),
     Enum(String, Box<MonObject>),
     Array(Vec<MonObject>),
     Dictionary(HashMap<String, MonObject>),
+}
+
+impl MonObject {
+    pub fn from_file(path: &str) -> Result<Self, Box<dyn Error>> {
+        let source_code = std::fs::read_to_string(path)?;
+        let source_code: Rc<[char]> = Rc::from(source_code.chars().collect::<Vec<char>>());
+
+        let tokens = lexer::lex(source_code)?;
+
+        Ok(parser::parse(tokens)?)
+    }
+}
+
+impl Debug for MonObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = format!("{self}");
+        let s = s.replace(" ", "");
+        write!(f, "{}", s.replace("\n", ""))
+    }
 }
 
 impl Display for MonObject {
@@ -20,9 +41,8 @@ impl Display for MonObject {
         }
 
         match self {
-            MonObject::Number(s) => write!(f, "{s}"),
-            MonObject::Bool(s) => write!(f, "{s}"),
-            MonObject::String(s) => write!(f, "{s}"),
+            MonObject::PrimitiveType(s) => write!(f, "{s}"),
+            MonObject::String(s) => write!(f, "\"{s}\""),
             MonObject::Enum(name, mon_object) => write!(f, "{name} {mon_object:<indent$}"),
             MonObject::Array(array) => {
                 if array.len() == 0 {

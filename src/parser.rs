@@ -13,6 +13,7 @@ pub fn parse(tokens: Vec<Token>) -> ParserResult<MonObject> {
     }
 }
 
+#[derive(Debug)]
 pub enum ParserErrorType {
     UnexpectedToken(TokenType),
     ExpectedEnum,
@@ -47,8 +48,7 @@ impl Parser {
 
     fn value(&mut self) -> ParserResult<MonObject> {
         Ok(match self.cur().ttype {
-            TokenType::Number => MonObject::Number(self.advance().text.to_string()),
-            TokenType::Bool => MonObject::Bool(self.advance().text.to_string()),
+            TokenType::PrimitiveTypeLiteral => MonObject::PrimitiveType(self.advance().text.to_string()),
             TokenType::String => MonObject::String(self.advance().text.to_string()),
             TokenType::Identifier => {
                 // This helps because it allows early returns

@@ -8,8 +8,7 @@ pub struct Token {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
-    Number,
-    Bool,
+    PrimitiveTypeLiteral,
     String,
     Identifier,
     LeftBracket,
@@ -24,8 +23,7 @@ pub enum TokenType {
 impl TokenType {
     pub fn get_name(&self) -> &str {
         match self {
-            TokenType::Number => "number",
-            TokenType::Bool => "bool",
+            TokenType::PrimitiveTypeLiteral => "primitive type literal",
             TokenType::String => "string",
             TokenType::Identifier => "identifier",
             TokenType::LeftBracket => "[",

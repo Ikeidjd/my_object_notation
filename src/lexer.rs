@@ -2,20 +2,13 @@ use std::{fmt::Display, ops::{Deref, DerefMut}, rc::Rc};
 
 use crate::{mon_error::MonError, text::Text, token::{Token, TokenType}};
 
-pub fn lex(source_code: Rc<[char]>) -> Result<Vec<Token>, Vec<LexerError>> {
+pub fn lex(source_code: Rc<[char]>) -> LexerResult<Vec<Token>> {
     let mut lexer = Lexer::new(source_code);
 
     let mut tokens = Vec::new();
-    let mut errors = Vec::new();
 
     loop {
-        let token = match lexer.get_next_token() {
-            Ok(token) => token,
-            Err(error) => {
-                errors.push(error);
-                continue;
-            }
-        };
+        let token = lexer.get_next_token()?;
 
         if token.ttype == TokenType::End {
             break;
@@ -24,12 +17,10 @@ pub fn lex(source_code: Rc<[char]>) -> Result<Vec<Token>, Vec<LexerError>> {
         tokens.push(token);
     }
 
-    match errors.is_empty() {
-        true => Ok(tokens),
-        false => Err(errors),
-    }
+    Ok(tokens)
 }
 
+#[derive(Debug)]
 pub enum LexerErrorType {
     InvalidCharacter,
     UnclosedStringLiteral,
@@ -64,10 +55,7 @@ impl Lexer {
 
     fn get_next_token(&mut self) -> LexerResult<Token> {
         self.skip_whitespace();
-
-        self.start_index = self.index;
-        self.start_line = self.line;
-        self.start_pos = self.pos;
+        self.update_start();
 
         let c = self.advance();
 
@@ -106,7 +94,7 @@ impl Lexer {
             self.advance();
         }
 
-        self.get_token_of_type(TokenType::Number)
+        self.get_token_of_type(TokenType::PrimitiveTypeLiteral)
     }
 
     fn identifier_or_bool(&mut self) -> Token {
@@ -115,23 +103,26 @@ impl Lexer {
         }
 
         match &self.0.to_string()[..] {
-            "true" | "false" => self.get_token_of_type(TokenType::Bool),
+            "true" | "false" => self.get_token_of_type(TokenType::PrimitiveTypeLiteral),
             _ => self.get_token_of_type(TokenType::Identifier),
         }
     }
 
     fn string(&mut self) -> LexerResult<Token> {
+        self.update_start();
+
         while self.cur() != '"' && self.cur() != '\n' && self.cur() != '\0' {
             self.advance();
         }
 
-        if self.cur() != '"' {
-            return Err(LexerError::new(LexerErrorType::UnclosedStringLiteral, self));
-        }
+        let token = match self.cur() == '"' {
+            true => self.get_token_of_type(TokenType::String),
+            false => return Err(LexerError::new(LexerErrorType::UnclosedStringLiteral, self)),
+        };
 
         self.advance();
 
-        Ok(self.get_token_of_type(TokenType::String))
+        Ok(token)
     }
 
     fn get_token_of_type(&mut self, ttype: TokenType) -> Token {
@@ -155,6 +146,12 @@ impl Lexer {
                 }
             }
         }
+    }
+
+    fn update_start(&mut self) {
+        self.start_index = self.index;
+        self.start_line = self.line;
+        self.start_pos = self.pos;
     }
 
     fn cur(&self) -> char {

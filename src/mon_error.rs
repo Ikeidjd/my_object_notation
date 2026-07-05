@@ -1,8 +1,9 @@
-use std::fmt::Display;
+use std::{error::Error, fmt::{Debug, Display}};
 
 use crate::text::Text;
 
-pub struct MonError<ErrorType: Display> {
+#[derive(Debug)]
+pub struct MonError<ErrorType: Debug + Display> {
     ttype: ErrorType,
     line_str: String,
     line: usize,
@@ -10,7 +11,9 @@ pub struct MonError<ErrorType: Display> {
     end_pos: usize,
 }
 
-impl<ErrorType: Display> MonError<ErrorType> {
+impl<ErrorType: Debug + Display> Error for MonError<ErrorType> {}
+
+impl<ErrorType: Debug + Display> MonError<ErrorType> {
     pub fn new(ttype: ErrorType, text: &Text) -> Self {
         let start_of_line = text.start_index - text.start_pos;
 
@@ -30,7 +33,7 @@ impl<ErrorType: Display> MonError<ErrorType> {
     }
 }
 
-impl<ErrorType: Display> Display for MonError<ErrorType> {
+impl<ErrorType: Debug + Display> Display for MonError<ErrorType> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Error at line {}, pos {}.\n{}", self.line, self.start_pos, self.line_str)?;
 
