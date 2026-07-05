@@ -24,6 +24,6 @@
             ttype = Water [],
         }
     ],
-    weapon = Some["CopperShortsword"],
+    weapon = Some ["CopperShortsword"],
     alt_weapon = None [],
 }

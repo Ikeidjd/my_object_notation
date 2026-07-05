@@ -1,4 +1,6 @@
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
+
+use crate::serializable::Serializable;
 
 mod text;
 mod mon_error;
@@ -6,6 +8,7 @@ mod token;
 mod lexer;
 mod mon_object;
 mod parser;
+mod serializable;
 
 fn main() {
     unsafe { std::env::set_var("RUST_BACKTRACE", "1") };
@@ -42,4 +45,11 @@ fn main() {
     };
 
     println!("{object}");
+
+    let a = HashMap::from([
+        ("a".to_owned(), vec![10, 20]),
+        ("b".to_owned(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    ]);
+
+    println!("{}", a.serialize());
 }

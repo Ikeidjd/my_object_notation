@@ -98,6 +98,10 @@ impl Lexer {
     }
 
     fn number(&mut self) -> Token {
+        if self.cur() == '+' || self.cur() == '-' {
+            self.advance();
+        }
+
         while self.cur().is_numeric() {
             self.advance();
         }
